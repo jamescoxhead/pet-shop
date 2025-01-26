@@ -1,5 +1,7 @@
 name: build
 
+permissions: read-all
+
 on:
   pull_request:
     branches:
@@ -50,7 +52,7 @@ jobs:
           dotnet publish --configuration ${{ env.BUILD_CONFIGURATON }} --self-contained --output ./publish
           cd publish
           zip -r ./publish.zip .
-        working-directory: ./Source/${{ env.PROJECT_NAME }}.Web
+        working-directory: ./src/${{ env.PROJECT_NAME }}.Web
 
       - name: Upload Artifact
         if: ${{ inputs.publish == true }}
