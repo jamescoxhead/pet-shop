@@ -1,0 +1,60 @@
+name: build
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - .gitignore
+      - .gitattributes
+      - .editorconfig
+      - README.md
+
+  workflow_call:
+    inputs:
+      publish:
+        type: boolean
+        default: false
+        description: Publish build artifacts?
+
+env:
+  DOTNET_VERSION: 9.x
+  BUILD_CONFIGURATON: Release
+  PROJECT_NAME: PetShop
+
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install .NET ${{env.DOTNET_VERSION}}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{env.DOTNET_VERSION}}
+
+      - name: Restore NuGet packages
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --configuration ${{ env.BUILD_CONFIGURATON }} --no-restore
+
+      - name: Run tests
+        run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATON }} --verbosity normal
+
+      - name: Publish Application
+        if: ${{ inputs.publish == true }}
+        run: |
+          dotnet publish --configuration ${{ env.BUILD_CONFIGURATON }} --self-contained --output ./publish
+          cd publish
+          zip -r ./publish.zip .
+        working-directory: ./Source/${{ env.PROJECT_NAME }}.Web
+
+      - name: Upload Artifact
+        if: ${{ inputs.publish == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: application
+          path: ./Source/${{ env.PROJECT_NAME }}.Web/publish/publish.zip
